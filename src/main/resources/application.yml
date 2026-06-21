@@ -1,0 +1,17 @@
+server:
+  port: 8077
+  servlet:
+    application-display-name: hedz-tiny-ledger
+
+spring:
+  profiles:
+    active: dev
+
+springdoc:
+  override-with-generic-response: false
+  swagger-ui:
+    url: /api.yml
+    disable-swagger-default-url: true
+  api-docs:
+    enabled: true
+    path: /api-docs

@@ -1,0 +1,162 @@
+openapi: '3.0.3'
+info:
+  title: 'Tiny Ledger API'
+  contact:
+    name: "Hélder Diniz / helderdiniz @ github"
+  version: '1.0.0'
+
+tags:
+  - name: "Transaction"
+  - name: "Balance"
+
+components:
+  parameters:
+    limit:
+      name: limit
+      in: query
+      description: The number of results to fetch.
+        A default is enforced by the service.
+      schema:
+        type: integer
+        default: 10
+    page:
+      name: page
+      in: query
+      description: The page to fetch, for a list of results. Zero-based indexing is used here.
+        A default is enforced by the service.
+      schema:
+        type: integer
+        default: 0
+
+  schemas:
+    TransactionTypeDTO:
+      type: string
+      enum: [ WITHDRAWAL, DEPOSIT ]
+
+    TransactionDTO:
+      type: object
+      required:
+        - referenceId
+        - amount
+        - type
+        - date
+      properties:
+        referenceId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        date:
+          type: string
+          format: date-time
+        type:
+          $ref: "#/components/schemas/TransactionTypeDTO"
+        description:
+          type: string
+
+    BalanceDTO:
+      type: object
+      required:
+        - amount
+        - lastCalculationDate
+      properties:
+        amount:
+          type: number
+        lastCalculationDate:
+          type: string
+          format: date-time
+
+    TransactionListDTO: # Leaving an open object for extensibility (e.g. pageInfo, or re-setting standards)
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionDTO"
+
+    CreateTransactionDTO:
+      type: object
+      required:
+        - referenceId
+        - amount
+        - type
+      properties:
+        referenceId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        type:
+          $ref: "#/components/schemas/TransactionTypeDTO"
+        description:
+          type: string
+
+paths:
+  /balance:
+    get:
+      operationId: getBalance
+      summary: "Fetches the current balance"
+      tags:
+        - "Balance"
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BalanceDTO"
+  /transaction:
+    get:
+      operationId: getTransactions
+      summary: "Fetches all existing transactions"
+      tags:
+        - "Transaction"
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/page'
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionListDTO"
+        400:
+          description: Invalid arguments/parameters passed
+            response content follows RFC 9457
+    post:
+      operationId: createTransaction
+      summary: "Creates a transaction (records a new money movement)"
+      tags:
+        - "Transaction"
+      requestBody:
+        content:
+          application/json:
+            example:
+              referenceId: 9d9faa2d-2608-4e17-825f-fcae9058aa8e
+              amount: 3.10
+              type: DEPOSIT
+              description: An example deposit
+            schema:
+              $ref: "#/components/schemas/CreateTransactionDTO"
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionDTO"
+        200:
+          description: Previously created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionDTO"
+        400:
+          description: Invalid arguments/parameters passed
+            response content follows RFC 9457
+        422:
+          description: Request understood, but semantically rejected
+            response content follows RFC 9457
